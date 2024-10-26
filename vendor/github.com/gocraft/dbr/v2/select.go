@@ -33,7 +33,8 @@ type SelectStmt struct {
 
 	comments Comments
 
-	indexHints []Builder
+	indexHints     []Builder
+	optimizerHints []Builder
 }
 
 type SelectBuilder = SelectStmt
@@ -53,6 +54,17 @@ func (b *SelectStmt) Build(d Dialect, buf Buffer) error {
 	}
 
 	buf.WriteString("SELECT ")
+
+	if len(b.optimizerHints) > 0 {
+		buf.WriteString("/*+ ")
+		for i, hint := range b.optimizerHints {
+			if i > 0 {
+				buf.WriteString(" ")
+			}
+			hint.Build(d, buf)
+		}
+		buf.WriteString(" */ ")
+	}
 
 	if b.IsDistinct {
 		buf.WriteString("DISTINCT ")
@@ -214,17 +226,9 @@ func Select(column ...interface{}) *SelectStmt {
 	}
 }
 
-func prepareSelect(a []string) []interface{} {
-	b := make([]interface{}, len(a))
-	for i := range a {
-		b[i] = a[i]
-	}
-	return b
-}
-
 // Select creates a SelectStmt.
-func (sess *Session) Select(column ...string) *SelectStmt {
-	b := Select(prepareSelect(column)...)
+func (sess *Session) Select(column ...interface{}) *SelectStmt {
+	b := Select(column...)
 	b.Runner = sess
 	b.EventReceiver = sess.EventReceiver
 	b.Dialect = sess.Dialect
@@ -232,8 +236,8 @@ func (sess *Session) Select(column ...string) *SelectStmt {
 }
 
 // Select creates a SelectStmt.
-func (tx *Tx) Select(column ...string) *SelectStmt {
-	b := Select(prepareSelect(column)...)
+func (tx *Tx) Select(column ...interface{}) *SelectStmt {
+	b := Select(column...)
 	b.Runner = tx
 	b.EventReceiver = tx.EventReceiver
 	b.Dialect = tx.Dialect
@@ -478,6 +482,19 @@ func (b *SelectStmt) IndexHint(hints ...interface{}) *SelectStmt {
 			b.indexHints = append(b.indexHints, Expr(hint))
 		case Builder:
 			b.indexHints = append(b.indexHints, hint)
+		}
+	}
+	return b
+}
+
+// OptimizerHint adds a MySQL optimizer hint. Hint can be a Builder or string.
+func (b *SelectStmt) OptimizerHint(hints ...interface{}) *SelectStmt {
+	for _, hint := range hints {
+		switch hint := hint.(type) {
+		case string:
+			b.optimizerHints = append(b.optimizerHints, Expr(hint))
+		case Builder:
+			b.optimizerHints = append(b.optimizerHints, hint)
 		}
 	}
 	return b

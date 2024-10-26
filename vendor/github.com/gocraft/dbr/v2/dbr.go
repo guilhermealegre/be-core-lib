@@ -26,7 +26,7 @@ func Open(driver, dsn string, log EventReceiver) (*Connection, error) {
 		d = dialect.MySQL
 	case "postgres", "pgx":
 		d = dialect.PostgreSQL
-	case "sqlite3":
+	case "sqlite3", "sqlite":
 		d = dialect.SQLite3
 	case "mssql":
 		d = dialect.MSSQL
@@ -86,7 +86,7 @@ var (
 // SessionRunner can do anything that a Session can except start a transaction.
 // Both Session and Tx implements this interface.
 type SessionRunner interface {
-	Select(column ...string) *SelectBuilder
+	Select(column ...interface{}) *SelectBuilder
 	SelectBySql(query string, value ...interface{}) *SelectBuilder
 
 	InsertInto(table string) *InsertBuilder
