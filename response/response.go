@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"reflect"
 
-	"bitbucket.org/asadventure/be-core-lib/errors"
-	"bitbucket.org/asadventure/be-core-lib/pagination"
-	msg "bitbucket.org/asadventure/be-core-lib/pagination"
 	"github.com/fatih/structs"
+	"github.com/guilhermealegre/go-clean-arch-core-lib/errors"
+	"github.com/guilhermealegre/go-clean-arch-core-lib/pagination"
+	msg "github.com/guilhermealegre/go-clean-arch-core-lib/pagination"
 )
 
 // IsEmpty verify if the error response is empty
@@ -32,6 +32,12 @@ func (e *ErrorResponse) AddError(err error) {
 	}
 }
 
+// SetMetadata sets the metadata
+func (e *ErrorResponse) SetMetadata(metadata interface{}) {
+	mBytes, _ := json.Marshal(metadata)
+	_ = json.Unmarshal(mBytes, &e.Meta.MetaData)
+}
+
 // GetResponse get response
 func GetResponse(data interface{}, pagination *msg.Pagination, meta interface{}, errs ...error) (int, interface{}) {
 	if len(errs) > 0 && errs[0] != nil {
@@ -46,6 +52,10 @@ func GetResponse(data interface{}, pagination *msg.Pagination, meta interface{},
 			}
 
 			errorResponse.AddError(e)
+		}
+
+		if meta != nil {
+			errorResponse.SetMetadata(meta)
 		}
 
 		if errorResponse.Status == 0 {

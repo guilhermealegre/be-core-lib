@@ -2,6 +2,7 @@ package table
 
 import (
 	"fmt"
+	"strings"
 
 	dbr "github.com/gocraft/dbr/v2"
 )
@@ -27,8 +28,19 @@ func (t *Table) As(alias string) dbr.Builder {
 	})
 }
 
-func (t *Table) Build(d dbr.Dialect, buf dbr.Buffer) error {
-	_, err := buf.WriteString(d.QuoteIdent(t.String()))
+func (t *Table) Build(d dbr.Dialect, buf dbr.Buffer) (err error) {
+	split := strings.SplitN(t.String(), ".", 2)
+	switch len(split) {
+	case 1:
+		if _, err = buf.WriteString(d.QuoteIdent(split[0])); err != nil {
+			return err
+		}
+	case 2:
+		if _, err = buf.WriteString(d.QuoteIdent(split[0]) + "." + d.QuoteIdent(split[1])); err != nil {
+			return err
+		}
+	}
+
 	return err
 }
 

@@ -104,3 +104,11 @@ func GetString(ptr *string) string {
 	}
 	return *ptr
 }
+
+func ConvertSlice[T any, U any](input []T, convertFunc func(T) U) []U {
+	output := make([]U, len(input))
+	for i, item := range input {
+		output[i] = convertFunc(item)
+	}
+	return output
+}

@@ -40,4 +40,6 @@ type ErrorResponse struct {
 	Status int `json:"status"`
 	// Errors
 	Errors []error `json:"errors"`
+	// Meta
+	Meta Meta `json:"meta,omitempty"`
 }

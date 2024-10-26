@@ -30,36 +30,51 @@ func (adapter *Adapter) getFullURL(path string) string {
 	return fmt.Sprintf("%s/%s", adapter.Server.Endpoint, path)
 }
 
-func (adapter *Adapter) parseResponse(response *http.Response, result interface{}) error {
+func (adapter *Adapter) parseResponse(response *http.Response, result interface{}) (err error) {
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(response.Body)
 
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return err
+	hasBody := response.Body != nil && response.Body != http.NoBody
+	var body []byte
+	if hasBody {
+		body, err = io.ReadAll(response.Body)
+		if err != nil {
+			return err
+		}
 	}
 
-	if response.StatusCode >= 400 {
+	if response.StatusCode >= http.StatusBadRequest {
 		// Handle error response based on specific REST server error format
 		// You can customize this according to your REST server's response format
 		var errResponse struct {
 			Message string `json:"message"`
 			Error   string `json:"error"`
+			TraceId string `json:"traceId"`
 			// Other error response fields
 		}
-		if err = json.Unmarshal(body, &errResponse); err != nil {
-			return fmt.Errorf("API error: %s", body)
-		}
 
-		if errResponse.Message != "" {
-			return fmt.Errorf("API error: %s", errResponse.Message)
-		} else {
-			return fmt.Errorf("API error: %s", errResponse.Error)
+		if hasBody {
+			if err = json.Unmarshal(body, &errResponse); err != nil {
+				return fmt.Errorf("API error: %s", string(body))
+			}
+
+			var value string
+			if errResponse.Message != "" {
+				value = errResponse.Message
+			} else if errResponse.Error != "" {
+				value = errResponse.Error
+			} else if errResponse.TraceId != "" {
+				value = errResponse.TraceId
+			} else {
+				value = "n/a"
+			}
+
+			return fmt.Errorf("API error: %s", value)
 		}
 	}
 
-	if result != nil {
+	if result != nil && response.StatusCode != http.StatusNoContent && hasBody {
 		if err = json.Unmarshal(body, result); err != nil {
 			return err
 		}
