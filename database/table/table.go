@@ -46,5 +46,5 @@ func (t *Table) Build(d dbr.Dialect, buf dbr.Buffer) (err error) {
 
 // String Will assume the dialect as PostgreSQL
 func (t *Table) String() string {
-	return fmt.Sprintf("%s.%s", t.Schema, t.Table)
+	return fmt.Sprintf("\"%s\".%s", t.Schema, t.Table)
 }
