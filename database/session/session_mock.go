@@ -45,11 +45,9 @@ func (s *SessionMock) BeginTx(ctx context.Context, opts *sql.TxOptions) (ITx, er
 	return args.Get(0).(ITx), args.Error(1)
 }
 
-func (s *SessionMock) Select(column ...string) *dbr.SelectBuilder {
+func (s *SessionMock) Select(column ...any) *dbr.SelectBuilder {
 	var params []interface{}
-	for _, c := range column {
-		params = append(params, c)
-	}
+	params = append(params, column...)
 
 	args := s.Called(params...)
 	if args.Get(0) == nil {
