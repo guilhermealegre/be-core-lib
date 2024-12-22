@@ -42,11 +42,9 @@ func (t *TxMock) RollbackUnlessCommitted() {
 	_ = t.Called()
 }
 
-func (t *TxMock) Select(column ...string) *dbr.SelectBuilder {
+func (t *TxMock) Select(column ...any) *dbr.SelectBuilder {
 	var params []interface{}
-	for _, c := range column {
-		params = append(params, c)
-	}
+	params = append(params, column...)
 
 	args := t.Called(params...)
 	if args.Get(0) == nil {
